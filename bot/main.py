@@ -19,6 +19,8 @@ LionBrain Bot — Zeabur 雲端版（GitHub API）
 
 import base64
 import datetime
+import threading
+from http.server import BaseHTTPRequestHandler, HTTPServer
 import html
 import json
 import logging
@@ -1287,7 +1289,20 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # 主程式
 # ══════════════════════════════════════════════════════════════════════════════
 
+
+def _start_health_server():
+    port = int(os.getenv('PORT', '8080'))
+    class _H(BaseHTTPRequestHandler):
+        def do_GET(self):
+            self.send_response(200); self.end_headers(); self.wfile.write(b'OK')
+        def log_message(self, *a): pass
+    t = threading.Thread(target=HTTPServer(('0.0.0.0', port), _H).serve_forever, daemon=True)
+    t.start()
+    import logging; logging.getLogger(__name__).info(f'Health server on port {port}')
+
+
 def main():
+    _start_health_server()
     if not TELEGRAM_TOKEN:
         raise ValueError("❌ TELEGRAM_TOKEN 未設定")
 
